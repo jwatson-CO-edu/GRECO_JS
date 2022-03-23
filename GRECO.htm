@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>GRECO</title>
+	
+	<style>
+	
+		table {
+			border-spacing: 1px; /* around the cells */
+			padding: 0px;        /* around the table */
+		}
+		/* Define CSS class .button */
+		.button {
+		    font-family:"Lucida Console", Monaco, monospace;
+		    display: table-cell;
+		    text-align: center;
+		    vertical-align:middle;
+		    color:black;
+		    height: 30px;
+		    width:  30px;
+		    border: 1px solid black;
+		    padding: 0px;
+		    /* URL: http://stackoverflow.com/questions/924916/is-there-a-way-to-make-a-div-unselectable */
+		    -moz-user-select: -moz-none;
+		    -khtml-user-select: none;
+		    -webkit-user-select: none;
+		    -o-user-select: none;
+		    user-select: none;
+		}
+		.status {
+		    font-family:"Lucida Console", Monaco, monospace;
+		    display: table-cell;
+		    text-align: center;
+		    vertical-align:middle;
+		    color:black;
+		    height: 31px;
+		    width:  31px;
+		    padding: 0px;
+		}
+		.display {
+		    font-family:"Lucida Console", Monaco, monospace;
+		    display: table-cell;
+		    text-align: right;
+		    vertical-align:middle;
+		    color:black;
+		    height: 30px;
+		    width:  142px;
+		    max-width:  142px;
+		    border: 1px solid black;
+		    padding: 0px;
+		    /* URL: http://makandracards.com/makandra/5883-use-css-text-overflow-to-truncate-long-texts */
+		    overflow: hidden;
+		}
+		.transfer {
+		    font-family:"Lucida Console", Monaco, monospace;
+		    display: table-cell;
+		    text-align: center;
+		    vertical-align:middle;
+		    color:black;
+		    height: 30px;
+		    width:  178px;
+		    border: 1px solid black;
+		    padding: 0px;
+		}
+	</style>
+</head>
+
+<!-- 
+GRECO.htm
+James Watson, 2014 June 
+[G]raduate [R]eview for [E]xams [C]alculator, [O]utstanding!
+-->
+
+<!-- 
+== LOG ==
+2015-03-14: * This project is now pointless. Sporadic development over the last 10 months was based on my memories of the GRE calculator from my two times
+              taking the test at the testing center, and the URL below that describes the operation of the calculator. It turns out that my interpretation
+              of that description does not match the actual operation of the GRE calculator. I know this because test preparation software available from
+              ETS includes a working GRE calculator. The assumption made about the actual operation are so prevalent as to make recovery of the current 
+              product to an exact replica a significant undertaking. I was directed to the test preparation software by ETS, who were responding to an
+              email inquiry about the specifics of the GRE calculator behavior. The availability of the calculator for free from ETS renders this project
+              moot. The use case for the project would then be limited to times when one wants to practice GRE math problems but does not have access to
+              a Windows or Mac computer. Also, I have come to the realization that this project is over-engineered. The product did not need its own
+              algebraic evaluator in order to function. Obviously, JavaScript already has this. I had but to send an expression built with the UI to the
+              built-in 'eval' function in order to make a calculation with the correct order of operations. All that would have remained at that point was
+              to provide input validation and output dressing to mimic the behavior of the GRE calculator. The algebraic evaluator was a significant 
+              effort that caused development time to be overlong. The one upside to the development of this project is now I have an algebraic evaluator, 
+              in case I ever need to implement one. Perhaps the evaluator could be build up further into a computer algebra system? Many such systems 
+              exist already, but building one might provide learning and entertainment.
+              - If I had wanted to replicate the behavior of the GRE calculator, I should have pursued a better description sooner
+              - Being in possession of the model calculator, I should have evaluated the need to replicate it much sooner
+            * 'equals_listener' now checks that 'result.exp' has a length greater than one before evaluating. No error results if the "=" key is pressed
+              again after the last calculation has completed.
+2015-03-07: * Wrote: 'error_display'.
+            * Any expressions that evaluates to an error will cause 'error_display' to be called
+            * Changed 'equals_listener' so that a result larger than the maximum number of digits forces result to 'GRECO_ERR', "DISPLAY LIMIT EXCEEDED"
+2015-02-18: Wrote 'append_decimal' and 'decimal_listener' to implement correct decimal behavior
+            - Disallows multiple decimals in the same entry
+            - An entry that begins with a decimal is automatically prefixed with a "0" for the sake of clarity (< 1)
+2015-02-16: Changes to functions 'button_num_listener', 'button_opr_listener', and 'equals_listener' now differentiate 
+            between an entry that has been completed and an entry that is in process through the use of the 'entryCmplt'
+            flag. Previously, when a number key was pressed following calc evaluation, the digit was appended to the 
+            result of the last calculation rather than beginning a new one. 
+            - Allows overwriting the calc result
+            - Allows the user to either use the result of the last evaluated arithmetic expression or overwrite it with 
+              their own entry
+            entry with a new decimal
+2015-02-11: Wrote: 'open_entry', 'clos_entry', 'memory_clear_listener', 'memory_recall_listener'
+2015-02-10: 'memory_sum_listener'
+2015-02-09: Wrote: 'reset_expressions', 'CE_listener', 'CA_listener'
+2015-02-08: * Added a 'return 0;' statement after every 'GRECO_ERR' in 'infix_operation' and 'pstfx_sqrt'. Otherwise subsequent tests 
+              are inspecting an expression that was already flagged an error, and incorrect error information will be written over 
+              existing 'alg.err'
+			* Wrote: 'set_entryStr', 'equals_listener', 'negation_listener', 'clear_entries', 'nnString', 'entryStr_to_disp', 
+			  'last_seq', 'closParen_listener' with helpers 'close_paren_only' and 'closeout_paren' 
+			* Adapted 'button_opr_listener' to handle the case when the first operand is a parenthetical expression
+            * GUI can be used to build expected cases of parenthetical expressions (2 * (2 - 3)), ((3 + 4) / 2), ((2 + 3) * (4 + 5))
+2015-02-07: * Disabled tests that assign to 'entryStr'
+            * Wrote 'nnNumber'
+2015-02-06: * Wrote: - 'append_char_and_display' for use with number button listeners 
+                     - 'button_num_listener' a higher order function to produce number button listeners
+            * Used the above to add 'onclick' event listeners to all 10 number keys
+2015-02-04: 'pstfx_sqrt' successfully checks that the operand passed to it is non-negative. If not, flags expressions as error
+2015-02-02: A close paren that raises the depth to greater than the starting depth (1) will cause an error order code to be assigned to that index. When
+            the evaluator reaches this code and finds a close paren, it will assume it did so because it is unmatched
+2014-12-27: * 'infix_divd' handles divide by zero
+            * Order error code is now -99 rather than 99. In the case that an unknown operator is included in the expression, this
+              will be evaluated first and an error will immediately result, unless expressions contains parentheses 99 deep, in which
+              case the deepest paren expression will be evaluated until the offensive token is encountered
+            * 'eval_exp' handles unknown tokens
+            * 'eval_exp' handles attempt to evaluate a literal as an operator
+            * 'eval_exp' handles an 'ERROR' token already in the expresion
+2014-11-1X: Wrote 'GRECO_ERR', added error catching to 'infix_operation', 'pstfx_sqrt', 'eval_paren'
+2014-11-09: Indices and sub-array lengths were not computed correctly in 'eval_paren' due to a misunderstanding of the use of 'Array.splice', 
+            resulting in an infinite loop. Corrected. Tested OK
+2014-11-08: * It became necessary to move 'PEMDAS' to a later location in the file so that it would be loaded with all the arithmetic evaluators rather 
+              than 'undefined'
+            * 'eval_exp' correctly evaluates expressions without parentheses
+2014-11-07: Wrote and tested 'pstfx_sqrt': OK
+2014-10-22: Tested 'clos_paren_exists', 'exp_to_alg': OK
+2014-10-20: * 'clos_paren_exists' now either reports the index of the matching paren, or False
+            * Wrote 'exp_to_alg' to turn a raw expression list into a full algebraic expression structure including order.
+              Note that 'exp_to_alg' does not check for validity!
+2014-10-15: * Priority of the close paren now matches the priority of the open paren, tested OK 2014-10-20
+            * Wrote 'clos_paren_exists', not tested
+2014-10-05: Wrote 'infix_operation', 'infix_adtn', 'infix_subt', 'infix_mult', 'infix_divd' : Tested OK
+2014-10-03: Wrote 'PEMDAS' functions and 'scan_exp', tested OK
+2014-08-05: '.display' class is right-aligned
+
+
+== TODO ==
+* Transfer files to the JavaScript Dev folder after you have left for school
+* Update GREC,O! to more closely conform to the model calculator behaviors
+  - The GRE calculator inserts a comma for every "3-group"
+  - The user is not able to add more digits than the GRE calculator can display. 
+  - The number of digits does not include the decimal or the commas, but it does include the leading zero
+  - The default number displayed is "0."
+  - When an open paren is typed, an open paren is displayed. The same is not true for a close paren
+  - When a closed paren is typed, the result of the parenthetical expression is evaluated and displayed! The user can continue to enter the calculation as
+    though the parenthetical result were a literal number entered
+  - The "=" key does not attempt an evaluation if the calculator is waiting for an operand.
+    ~ Start with ['3','+','='], Calculator displays "3". Followed by ['6','='], calculator displays "9".  It has completed the calculation begun before,
+      ignoring the first '='.
+  - GRE calculator does not respond to any button press other than 'C' or 'CE' when "Error" is displayed. These two keys are the only ways to recover from
+    an error
+  - GRE calculator evaluates the square root of the entry shown as soon as the button is pressed. ['3','+','9'] displays "9", then ['sqrt'] displays "3"
+    (the square root of 9 has been evaluated), then ['='] displays "6" (3+3 has been evaluated)
+* Investigate how to recover from an error in the GRE calculator
+* Consider 'Number.NEGATIVE_INFINITY' ('-Infinity') as an error order code so that an error will be recognized at an arbitrary paren depth.
+* Button tests per the ETS website
+* consider using jQuery for the UI, loaded via CDN: http://www.w3schools.com/jquery/jquery_install.asp
+* REMOVE GRE/ETS REFERENCES BEFORE SHIPPING!
+
+== NOTES ==
+2015-03-14: * ETS responded to inquiry with the following:
+              1. Once a calculation has been completed with the "=" key, what will happen if the "=" is immediately pressed a second time?  
+                 Nothing changes in the calculator display when “=” is pressed a second time.
+              2. Does the "C" key also clear memory, or the calculation in progress only?  
+                 The “C” key does not clear memory; it clears the display and any calculation in progress.  
+                 The MC key clears the memory and is the only key that does so.
+            * This project is now pointless.
+2015-03-07: ETS contacted to clarify the following behavior:
+            1. What will happen if "=" is immediately pressed a second time after a calculation has been completed?
+            2. Does "C" clear memory, or the calculation in progress only?
+2015-02-16: ETS website is silent on the issue as to whether the clear button for the display has any impact on the memory "register".
+            Clearing the calculation may be taken to mean that all numeric work underway, including the memory space, should
+            be cleared to make way for the next calculation. However, doing so removes the power to retain a previous result
+            when an erronous expression in progress (one that cannot be corrected by "CE") is cleared. If this were not 
+            the case, then the erronous calculation would need to be completed as a time-wasting dummy calculation in order
+            to preserve the present memory value. It is possible that ETS does this, but the most helpful case will be assumed
+            until proven otherwise.
+* URL, GRE calculator appearance and behavior: https://www.ets.org/gre/revised_general/prepare/quantitative_reasoning/calculator
+* URL, Event listeners: http://www.simonewebdesign.it/onclick-vs-addeventlistener/
+-->
+
+<body>
+	<div id="gui">
+		<table>
+			<tr>
+				<td><div class="status" id="memstt"></div></td>
+				<td colspan="4"><div class="display" id="clcdsp"></div></td>		
+			</tr>
+			<tr>
+				<td><div class="button" id="memrec">MR</div></td>
+				<td><div class="button" id="memclr">MC</div></td>		
+				<td><div class="button" id="memadd">M+</div></td>
+				<td><div class="button" id="prnopn">(</div></td>
+				<td><div class="button" id="prncls">)</div></td>
+			</tr>
+			<tr>
+				<td><div class="button" id="numsev">7</div></td>
+				<td><div class="button" id="numegt">8</div></td>		
+				<td><div class="button" id="numnin">9</div></td>
+				<td><div class="button" id="oprdiv">&#x2797;</div></td>
+				<td><div class="button" id="clrall">C</div></td>
+			</tr>
+			<tr>
+				<td><div class="button" id="numfor">4</div></td>
+				<td><div class="button" id="numfiv">5</div></td>		
+				<td><div class="button" id="numsix">6</div></td>
+				<td><div class="button" id="oprmlt">&#xd7;</div></td>
+				<td><div class="button" id="clrent">CE</div></td>
+			</tr>
+			<tr>
+				<td><div class="button" id="numone">1</div></td>
+				<td><div class="button" id="numtwo">2</div></td>		
+				<td><div class="button" id="numtre">3</div></td>
+				<td><div class="button" id="oprmin">&#x2212;</div></td>
+				<td><div class="button" id="oprsqt">&#x221a;</div></td>
+			</tr>
+			<tr>
+				<td><div class="button" id="clcneg">&#xb1;</div></td>
+				<td><div class="button" id="numzro">0</div></td>		
+				<td><div class="button" id="decmal">.</div></td>
+				<td><div class="button" id="oprpls">+</div></td>
+				<td><div class="button" id="clcent">=</div></td>
+			</tr>
+			<tr>
+				<td colspan="5"><div class="transfer" id="trndsp">Transfer Display</div></td>		
+			</tr>
+		</table>
+	</div>
+	
+	<pre id="display"></pre>
+	<pre id="debug"></pre>
+
+</body>
+
+
+
+<script type="text/javascript">
+	// Create textNodes and create vars to reference them
+	var preDebug = document.createTextNode("");
+	var preDisplay = document.createTextNode("");
+	// Attach textNodes under <PRE> tags for monospace formatting
+	document.getElementById('debug').appendChild(preDebug);	
+	document.getElementById('display').appendChild(preDisplay);
+
+	// == Demo Helper Functions ==
+	var nuline = (navigator.appName === "Netscape") ? "\n" : "\r"; // Set-able newline char to handle differences between browsers!
+	// Some useful functions to use when writing a script for the windows console
+	function display(a){ preDisplay.data += String(a); } // Convert 'a' to string and write to the console
+	// Convert 'a' to string and write to console with a newline
+	function displayln(a){ preDisplay.data = preDisplay.data + String(a) + nuline; } 
+	function displaycon(a){ console.log( String(a) ); } // Convert 'a' to string and print to console
+	function repeat_str(pattern, count){ return ( count <= 0 ? "" : pattern + repeat_str(pattern, count - 1) ); } // return string 'pattern' X 'count'
+	function sep(title, padChar, sepLen){ // Write a handy separating line to the console preceded and followed by newlines, title optionally inserted in middle
+		var titleStr = title || "", pad = padChar || "=", stanLen = sepLen || 33, sepStr = ""; // init title, standard len, separator string empty
+		titleStr = String(titleStr); //URL: http://www.w3schools.com/jsref/jsref_string.asp // coerce string if other than string
+		if(titleStr.length > stanLen){ titleStr = titleStr.slice(0, stanLen); }
+		sepStr = "\n" + repeat_str(pad, Math.floor((stanLen - titleStr.length)/2)) + titleStr + 
+			repeat_str(pad, Math.ceil((stanLen - titleStr.length)/2)) + "\n";
+		displayln( sepStr ); // display the separator string
+	}
+	function dispclear(){ preDisplay.data = ""; } // set 'preDisplay.data' to an empty string
+	
+	// = Specific Helpers =
+	
+	// Coerce 'input' to a Number only if it is non-null and not an empty string, a 'null' input results in 'NaN', rather than 0
+	function nnNumber(input){ var result = NaN; if( input !== null && input !== '' ){ result = Number(input); } return result; }
+	
+	// = End Specific =
+	
+	// == End Helper ==
+</script>
+
+<script type="text/javascript">
+
+	// == GRECO Implementation ==
+	
+	function scan_exp(nExp){ // return a priority list corresponding to 'nExp' according to 'PEMDAS'
+		depth = 1; // reset paren depth
+		var rtnSeq = []; // priority list
+		var exit = false; // token processing flag
+		var op = 0; // current 'PEMDAS' index
+		for(var i = 0; i < nExp.length; i++){ // for each item in 'nExp'
+			exit = false; // reset exit flag
+			op = 0; // reset 'PEMDAS' test index
+			do{ // for each 'PEMDAS' level, run that level's test and assign order if it passes, if it does not pass, then advance level and repeat
+				if( PEMDAS[op][0](nExp[i]) ){ rtnSeq.push( PEMDAS[op][1]() ); exit = true; }else{ op++; }
+			}while(!exit)
+		}
+		return rtnSeq;
+	}
+	
+	// = Algebraic Expression Creation =
+	
+	function empty_err(){ return {ndx: -1, msg:''}; } // GRECO error object
+	// ndx - Number, an integer that represents the index under evaluation when the error was thrown
+	// msg - String, contains any text information given by the code that threw the error, message to the user
+	function nu_err(pDex, pMsg){ return { ndx: pDex, msg: pMsg }; }
+	function empty_alg(){ return { exp: [], ord: [], err: empty_err()}; }; // empty expression object
+	// exp - List, a representation of the algebraic expression as entered at the UI
+	// ord - List, order in which 'exp' should be evaluated according to 'PEMDAS', addresses correspond to the tokens of 'exp'
+	var algExp = empty_alg(); // - List, holds the current algebraic expression
+	
+	function exp_to_alg(nExp){ // given expression 'nExp', return an expression data structure complete with order array
+		return { // note that this function does not check for correctness or validity of the argument expression!
+			exp: nExp.slice(), // create a copy of 'nExp' in case it is a reference, assumme 'nExp' contains no references
+			ord: scan_exp(nExp), // create an ordering array based on 'nExp'
+			err: empty_err() // default error object
+		}; 
+	}
+	
+	// = End Expression Creation =
+	
+	// = Error Handling =
+	/* Error handling within GRECO does not involve throwing JS errors. Instead, the contents of 'alg.exp' and 'alg.ord' 
+	are replaced with "ERROR" and '-99', respectively. If 'alg' was a sub-expression passed to an enclosing expression,
+	that expression should fail and retain any failure data from the sub-expression. */
+	
+	function GRECO_ERR(alg, index, msg){ // fail expression in place, store failure info plus message from client code
+		var temp = listruct_str(alg.exp); // store the offending expression to show the user. BAD USER, BAD!
+		alg.exp = ['ERROR']; // ERROR token
+		alg.ord = [-99]; // ---- ERROR order code
+		var errMsg = "ERROR at index " + index + " while evaluating expression" + nuline + temp + nuline + msg; //tragic story
+		alg.err = nu_err(index, errMsg);
+	}
+	
+	// = End Error =
+	
+	// = Infix Operations =
+	/* Within an algebraic expression 'alg', substitute sublist 'operand,operator,operand' with 'result', in place.  The operator is found at 'index'  
+	within 'alg.exp'. 
+	Return a success code: 
+	1 : Success
+	0 : Error / Fail */
+	
+	function infix_operation(sym, func){ // return a function that performs an infix operation 'func' within 'alg', operator at 'alg.exp[index]'
+		return function(alg, index){ // evaluate an infix operation as defined by the expression in 'alg', with an infix operator at 'index'
+			// can only be performed on two number literals on either side of a token matching 'sym'
+			var op1good; if(!(op1good = alg.ord[index-1] === 4)){ GRECO_ERR(alg, index-1, "OPERAND NOT A NUMBER");         return 0; }
+			var op2good; if(!(op2good = alg.ord[index+1] === 4)){ GRECO_ERR(alg, index+1, "OPERAND NOT A NUMBER");         return 0; }
+			var symGood; if(!(symGood = alg.exp[index] === sym)){ GRECO_ERR(alg, index,   "OPERATOR OTHER THAN EXPECTED"); return 0; }
+			if(symGood && op1good && op2good){ 
+				var result = func(alg.exp[index-1], alg.exp[index+1]); // ---- compute result with 'func'
+				alg.exp.splice(index-1, 2); alg.exp[index-1] = result; // replace the arithmetic sequence with the numerical result
+				alg.ord.splice(index-1, 2); alg.ord[index-1] = 4; // ---- replace the order sequence with a number literal code
+				return 1;
+			}//else{ return 0; }
+		};
+	}
+	
+	// ~ Define the four basic algebraic operations using the higher-order function above ~
+	var infix_adtn = infix_operation( '+' , function(op1,op2){ return op1 + op2; } );
+	var infix_subt = infix_operation( '-' , function(op1,op2){ return op1 - op2; } );
+	var infix_mult = infix_operation( '*' , function(op1,op2){ return op1 * op2; } );
+	
+	// Division requires some special attention in order to avoid divide by zero errors
+	var infix_divd = (function(){ // Return a function that performs devision as desired
+		var safe_division = infix_operation( '/' , function(op1,op2){ return op1 / op2; } ); //Perform this only if safe
+		return function(alg, index){ // evaluate an infix operation as defined by the expression in 'alg', with an infix operator at 'index'
+			if(alg.exp[index + 1] !== 0){ return safe_division(alg, index); }
+			else{ GRECO_ERR(alg, index, "DIVIDE BY ZERO ERROR"); return 0; }
+		};
+	})();
+	
+	// = End infix =
+	
+	// The radical is the only postfix operator in the calculator
+	/* Within an algebraic expression 'alg', substitute sublist 'operand,operator' with 'result', in place.  The operator is found at 'index'  
+	within 'alg.exp'. 
+	Return a success code: 
+	1 : Success
+	0 : Error / Fail */
+	function pstfx_sqrt(alg, index){ // evaluate square root in 'alg', given symbol at 'index'
+		// test if expression was properly formed. if not, return error code, no changes to 'alg' made
+		var symGood; if(!(symGood = alg.exp[index] === 'sqrt')){ GRECO_ERR(alg, index,   "OPERATOR OTHER THAN EXPECTED");  return 0; }
+		var op1good; if(!(op1good = alg.ord[index-1] === 4)){    GRECO_ERR(alg, index-1, "OPERAND NOT A NUMBER");          return 0; }
+		if(symGood && op1good){ // if checks passed for the sqrt token preceeded by a number literal, then proceed
+			if(alg.exp[index-1] >= 0){ // prereqs for operation met, now check that the operand is non-negative
+				var result = Math.sqrt( alg.exp[index-1] ); // compute the square root of the number literal
+				alg.exp.splice(index-1, 1); alg.exp[index-1] = result; // replace the arithmetic sequence with the numerical result
+				alg.ord.splice(index-1, 1); alg.ord[index-1] = 4; // ---- replace the order sequence with a number literal code
+				return 1;
+			// else operation fails for negative operands, GRECO does not support imaginary numbers!
+			}else{ GRECO_ERR(alg, index-1, "NONREAL RESULT"); return 0; } 
+		}//else{ return 0; }  
+	}
+	
+	// = Parenthetical Expressions =
+	
+	function clos_paren_exists(alg, index){ // determine if there is a matching paren at some 'index' + n and return index or False
+		var found = false; // assume expression is malformed until proven otherwise
+		if(alg.exp[index] === '('){ // perform check only if function was given index of open paren
+			var matchDepth = alg.ord[index]; // note the depth of the paren
+			var i = index + 1; // begin searching at the index directly after the open paren
+			do{
+				// if we find a close paren that matches the depth of the given paren, conditions met and exit with the closing paren index
+				if( alg.exp[i] === ')' && alg.ord[i] === matchDepth ){ found = i; } 
+				i++;
+			}while(!found && i < alg.ord.length); // while no matching paren found and the end of the expression has not been reached
+		}
+		return found; // return either 'false' or the closing paren index
+	}
+	
+	function eval_paren(alg, index){ // evaluate a parenthetical expression, then insert result of that expression within parent expression, in place
+		var enDex = false; // the index of the closing paren
+		if( enDex = clos_paren_exists(alg, index) ){ // if a closing paren exists, assign its index to 'enDex' and continue with the evaluation
+			var subAlg = { // create a temporary algebraic expression composed of the contents between matching parens
+				exp: alg.exp.slice(index+1, enDex), // copy expression
+				ord: alg.ord.slice(index+1, enDex), // copy order
+				err: empty_err() // ------------------ Do what with error?
+			};
+			eval_exp(subAlg); // evaluate the sub-expression, any nested parens will be handled here
+			if( subAlg.ord[0] === -99 ){ GRECO_ERR(alg, index + subAlg.err.ndx, subAlg.err.msg); return 0; } // 'subAlg' failed to evaluate, bubble up error
+			else{ // else 'subAlg' succesfully evaluated, splice answer into larger expression under evaluation
+				alg.exp.splice(index, enDex-index); alg.exp[index] = subAlg.exp[0]; // replace the arithmetic sub-sequence with the numerical result
+				alg.ord.splice(index, enDex-index); alg.ord[index] = subAlg.ord[0]; // replace the order sub-sequence with a number literal code
+				return 1; // return success code
+			}
+		}else{ GRECO_ERR(alg, index, "NO MATCHING PAREN"); return 0; } // else, return failure code 
+	}
+	
+	// = End Parenthetical =
+	
+	// = Expression Parser =
+	
+	var depth = 1; // --- Number, the current depth of parens, 
+	//                    depth of the close paren will match the open paren as a check that an entire expression is captured on eval 
+	var PEMDAS = [ /* --- List, holds lists of functions that: 
+                            [ identify part of an algebraic expression,
+                                  assign the appropriate evaluation order,
+                                  evaluating function with args (alg, index) ] */
+		[function(token){ return token === '('; }, // ------------------------------------------------ | openParen |    
+			function(){ depth--; return depth; }, 
+			eval_paren ],   
+		[function(token){ return token === ')'; }, // ------------------------------------------------ | closeParen |
+			// If depth is > 1, there are more close parens than open, error code at this index, otherwise depth
+			function(){ var temp = depth; depth++; return (depth > 1 ? -99 : temp); }, 
+			// Assume GRECO tried to evaluate an unmatched close paren
+			function(alg, index){ GRECO_ERR(alg, index, "UNMATCHED CLOSE PAREN"); } ], 
+		[function(token){ return token === 'sqrt'; }, // --------------------------------------------- | sqrt | 
+			function(){ return  1; },
+			pstfx_sqrt ],         
+		[function(token){ return token === '*'; }, // ------------------------------------------------ | mult |    
+			function(){ return  2; },
+			infix_mult ],         
+		[function(token){ return token === '/'; }, // ------------------------------------------------ | dvsn |
+			function(){ return  2; },
+			infix_divd ],         
+		[function(token){ return token === '+'; }, // ------------------------------------------------ | add |    
+			function(){ return  3; },
+			infix_adtn ],          
+		[function(token){ return token === '-'; }, // ------------------------------------------------ | sub |    
+			function(){ return  3; },
+			infix_subt ], 
+		[function(token){ return !isNaN(token); }, // ------------------------------------------------ | number literal |    
+			function(){ return  4; }, 
+			// GRECO will attempt to eval a literal if there are no operators or parens in an expression longer than one token
+			function(alg, index){ GRECO_ERR(alg, index, "ATTEMPTED TO PASS LITERAL AS OPERATOR"); } ], 
+		[function(token){ return token === 'ERROR'; }, // -------------------------------------------- | ERROR (eval ERROR) |
+			function(){ return -99; }, 
+			// This should never happen, errors should be handled earlier
+			function(alg, index){ GRECO_ERR(alg, index, "EXPRESSION CONTAINS 'ERROR' TOKEN"); }],
+		[function(token){ return true; }, // --------------------------------------------------------- | ERROR (default) |            
+			function(){ return -99; }, // Either token was not recognized, or this was an unhandled case, should also never happen
+			function(alg, index){ GRECO_ERR(alg, index, "UNKNOWN TOKEN"); } ] // No recognition case
+	];
+	
+	// = End Parser =
+	
+	function eval_exp(alg){ // evaluate an algebraic expression 'alg'
+		var first, fstLoc;
+		var exit = false; // token processing flag
+		var op = 0; // current 'PEMDAS' index
+		do{
+			first = Math.min.apply(null, alg.ord); // find the first priority
+			fstLoc = alg.ord.indexOf(first); // find the index of the first priority
+			exit = false; // reset exit flag
+			op = 0; // reset 'PEMDAS' test index
+			do{ // for each 'PEMDAS' level, run that level's test. if it passes then perform operation and exit, otherwise advance level and repeat
+				if( PEMDAS[op][0](alg.exp[fstLoc]) ){ PEMDAS[op][2](alg,fstLoc); exit = true; }else{ op++; }
+			}while(!exit)
+		}while(alg.exp.length > 1) // crunch until a final result is achieved
+		// What to do with an error
+		if(alg.err.ndx > -1){ dispclear(); displayln( alg.err.msg ); }
+	}
+	
+	// = User Interaction =
+	
+	var entryStr = ""; // ---- String, characters of the current entry, entered by user
+	var dispStr = ""; // ----- String, characters that actually get displayed 
+	var opEntry = null; // --- Number, current entry/operand
+	var entryCmplt = false; // Bool,   flag for whether numeric entry has completed. Determines if digits appended or overwritten
+	var sequence = []; // ---- Array,  sequence of tokens from user entry, not yet interpreted as an algebraic expression
+	var result = null; // ---- Object, algebraic expression, or the result of evaluating one
+	
+	function entryStr_to_opEntry(){
+		var temp = opEntry; // Temporarily store the operand in 'opEntry'
+		if( isNaN(opEntry = nnNumber(entryStr)) ){ opEntry = temp; } // Either coercion of 'entryStr' succeeds or original restored
+	}
+	function open_entry(){ entryCmplt = false; } // Open  entry to editing 
+	function clos_entry(){ entryCmplt = true;  } // Close entry to editing
+	function clear_entry(){ entryStr = ''; open_entry(); } // Clear the entry string and mark incomplete
+	function clear_entries(){ clear_entry(); opEntry = null; } // Clear entry string and operand entry, and mark incomplete
+	
+	function append_to_entryStr(nStr){ entryStr += nStr; } // Add char indicated by button press to the entry string
+	var calcDisplay = document.getElementById('clcdsp'); // Calculator display
+	// Coerce to 'String', if 'input' is 'null', return an empty string
+	function nnString(input){ var rtnStr = ""; if( input !== null ){ rtnStr = String(input); } return rtnStr; }
+	function txt_to_disp(nStr){ calcDisplay.textContent = nnString(nStr); } // send a string to the calculator display
+	function append_char_and_display(nChar){ append_to_entryStr(nChar); txt_to_disp(entryStr); }
+	function set_entryStr(input){ entryStr = nnString(input); } // Attempt to load a 'entryStr' with a string representation
+	function set_entryStr_and_display(nStr){ set_entryStr(nStr); txt_to_disp(nStr); } 
+	
+	// ~ Number Buttons ~
+	
+	// Generate a listener for a number button press           
+	function button_num_listener(bttnChar){ 
+		return function(){ 
+			if(!entryCmplt){ append_char_and_display(bttnChar); } // If entry has not been closed, append the character
+			else{ clear_entries(); append_char_and_display(bttnChar); open_entry } // else, clear entry, append, and open
+		}; 
+	}
+	
+	//numsev
+	var btnnumsev = document.getElementById('numsev');
+	btnnumsev.addEventListener('click', button_num_listener("7") );
+	
+	//numegt
+	var btnnumegt = document.getElementById('numegt');
+	btnnumegt.addEventListener('click', button_num_listener("8") );
+	
+	//numnin
+	var btnnumnin = document.getElementById('numnin');
+	btnnumnin.addEventListener('click', button_num_listener("9") );
+	
+	//numfor
+	var btnnumfor = document.getElementById('numfor');
+	btnnumfor.addEventListener('click', button_num_listener("4") );
+	
+	//numfiv
+	var btnnumfiv = document.getElementById('numfiv');
+	btnnumfiv.addEventListener('click', button_num_listener("5") );
+	
+	//numsix
+	var btnnumsix = document.getElementById('numsix');
+	btnnumsix.addEventListener('click', button_num_listener("6") );
+	
+	//numone
+	var btnnumone = document.getElementById('numone');
+	btnnumone.addEventListener('click', button_num_listener("1") );
+	
+	//numtwo
+	var btnnumtwo = document.getElementById('numtwo');
+	btnnumtwo.addEventListener('click', button_num_listener("2") );
+	
+	//numtre
+	var btnnumtre = document.getElementById('numtre');
+	btnnumtre.addEventListener('click', button_num_listener("3") );
+	
+	//numzro
+	var btnnumzro = document.getElementById('numzro');
+	btnnumzro.addEventListener('click', button_num_listener("0") );
+	
+	//decmal
+	var btndecmal = document.getElementById('decmal');
+	var append_decimal = button_num_listener("."); // create the basic listener
+	function decimal_listener(){
+		if( entryStr.indexOf('.') === -1 ){ // Only add a decimal if one does not already exist in 'entryStr'
+			append_decimal(); // Append a decimal 
+			if( entryStr.indexOf('.') === 0 ){ set_entryStr_and_display('0' + entryStr); } // Check decimal index, prepend '0' if first
+		}
+	}
+	btndecmal.addEventListener('click', decimal_listener );
+
+	// ~ End Number ~
+	
+	
+	// ~ Operator Buttons ~
+	
+	function push_to_sequence(token){ sequence.push(token); }
+	function clear_sequence(){ sequence = []; opEntry = null; }
+	
+	function button_opr_listener(oprToken){ // Generate a listener for an operator button press
+		return function(){ // If 'opEntry' is non-null, then assume there is a number there and append it and operator to 'sequence'
+			entryStr_to_opEntry(); // Attempt to parse the current entry
+			if(opEntry !== null || last_seq() === ')'){ 
+				if(opEntry !== null){ push_to_sequence(opEntry); } 
+				push_to_sequence(oprToken); 
+			}
+			clear_entries();
+			//clear_sequence(); // erase the current text entry to prepare for the next one
+			//txt_to_disp(entryStr); // not necessary to erase the display 
+			open_entry();
+		};
+	}
+	
+	//oprsqt
+	var btnoprsqt = document.getElementById('oprsqt');
+	btnoprsqt.addEventListener('click', button_opr_listener('sqrt') );
+	
+	//oprmlt
+	var btnoprmlt = document.getElementById('oprmlt');
+	btnoprmlt.addEventListener('click', button_opr_listener('*') );
+	
+	//oprdiv
+	var btnoprdiv = document.getElementById('oprdiv');
+	btnoprdiv.addEventListener('click', button_opr_listener('/') );
+	
+	//oprpls
+	var btnoprpls = document.getElementById('oprpls');
+	btnoprpls.addEventListener('click', button_opr_listener('+') );
+	
+	//oprmin
+	var btnoprmin = document.getElementById('oprmin');
+	btnoprmin.addEventListener('click', button_opr_listener('-') );
+	
+	// ~ End Operator ~
+	
+	
+	// ~ Calculation Buttons ~
+	
+	
+	function entryStr_to_disp(){ txt_to_disp(entryStr); } // send the 'entryStr' to the calculator display
+	function last_seq(){ return sequence[sequence.length - 1]; } // get the last item in the entry 'sequence'
+	function reset_expressions(){ sequence = []; result = null; } // erase 'sequence' and 'result'
+	function error_display(){ set_entryStr_and_display("ERROR"); } // send 'ERROR' to 'entryStr' and calc display
+	
+	//clcent 
+	var btnclcent = document.getElementById('clcent');
+	function equals_listener(){ // What to do when the "=" key is pressed
+		entryStr_to_opEntry(); // Attempt to parse the current entry
+		if(opEntry !== null){ push_to_sequence(opEntry); } // if entry valid, then add it to the sequence
+		clear_entries(); // prepare for follow-on operations
+		if( sequence.length > 0 ){ // for a non-empty sequence
+			result = exp_to_alg(sequence); // Create expression from sequence
+			if(result.exp.length > 1){ eval_exp(result); } // attempt to evaluate if there is not already a calc 'result' (length = 1) present
+		}
+		// If evaluation was successful, then set the entry string to the result and display it
+		if( result.exp[0] > 99999999 ){ GRECO_ERR(result, 0, "DISPLAY LIMIT EXCEEDED"); } // flag error when result too big to display
+		if( result.exp[0] !== 'ERROR' ){ // If the result not an error, format and display
+			
+			set_entryStr_and_display(result.exp[0]); 
+		}
+		else{ dispclear(); displayln( result.err.msg ); error_display(); } // Else error was found, display it
+		clear_sequence(); // Finished with 'sequence', get it ready for the next calc
+		clos_entry();
+	}
+	btnclcent.addEventListener('click', equals_listener );
+	
+	//clcneg
+	var btnclcneg = document.getElementById('clcneg');
+	function negation_listener(){
+		entryStr[0] === '-' ? entryStr = entryStr.slice(1) : entryStr = '-' + entryStr; // Add or remove a negative sign
+		txt_to_disp(entryStr);
+	}
+	btnclcneg.addEventListener('click', negation_listener );
+	
+	function push_and_clear(pushToken){ // Return a listener that adds paren to sequence and clears display
+		return function(){ push_to_sequence(pushToken); clear_entries(); entryStr_to_disp(); };
+	}
+
+	//prnopn
+	var btnprnopn = document.getElementById('prnopn');
+	btnprnopn.addEventListener('click', push_and_clear('(') );
+	
+	//prncls
+	var btnprncls = document.getElementById('prncls');
+	var closeout_paren = button_opr_listener(')');
+	var close_paren_only = push_and_clear(')');
+	function closParen_listener(){
+		isNaN( nnNumber(entryStr) ) ? close_paren_only() : closeout_paren();
+	}
+	btnprncls.addEventListener('click', closParen_listener );
+	
+	//clrent
+	var btnclrent = document.getElementById('clrent');
+	function CE_listener(){ clear_entries(); entryStr_to_disp(); } // clear entries and display
+	btnclrent.addEventListener('click', CE_listener );
+	
+	//clrall
+	var btnclrall = document.getElementById('clrall');
+	function CA_listener(){ // reset expression / calculation to initial state
+		CE_listener(); // clear entries and display
+		reset_expressions();
+	}
+	btnclrall.addEventListener('click', CA_listener );
+	
+	// ~ End Calculation ~
+	
+	
+	// ~ Memory Operations ~
+	var memory = 0; // Number, value set aside in "memory"
+	
+	
+	//memadd
+	var btnmemadd = document.getElementById('memadd');
+	function memory_sum_listener(){
+		entryStr_to_opEntry();
+		memory += opEntry;
+		clear_entries();
+		set_entryStr_and_display(memory);
+	}
+	btnmemadd.addEventListener('click', memory_sum_listener );
+	
+	//memrec
+	var btnmemrec = document.getElementById('memrec');
+	function memory_recall_listener(){ set_entryStr_and_display(memory); }
+	btnmemrec.addEventListener('click', memory_recall_listener );
+	
+	//memclr
+	var btnmemclr = document.getElementById('memclr');
+	function memory_clear_listener(){ memory = 0; }
+	btnmemclr.addEventListener('click', memory_clear_listener );
+	
+	
+	// ~ End Memory ~
+	
+	
+	// ~ Special Interactions ~
+	
+	//trndsp
+	
+	// ~ End Special ~
+	
+	// = End Interaction =
+	
+	// == End GRECO ==
+</script>
+	
+	
+<!-- script type="text/javascript">
+	// == Test GRECO ==
+	
+	function truNumStr(){
+		entryStr = "40"; entryStr_to_opEntry(); return opEntry;
+	}
+	
+	// = Specific Test Functions =
+	
+	function test_slice_paren(alg, index){
+		var enDex = false;
+		if( enDex = clos_paren_exists(alg, index) ){ // if a closing paren exists, assign its index to 'enDex' and continue with the evaluation
+			return { 
+				exp: alg.exp.slice(index+1, enDex),
+				ord: alg.ord.slice(index+1, enDex)
+			};
+			
+		}else{ return alg; }
+	}
+	
+	function test_splice_paren(alg, index){
+		var enDex = false;
+		if( enDex = clos_paren_exists(alg, index) ){ // if a closing paren exists, assign its index to 'enDex' and continue with the evaluation
+			alg.exp.splice(index, enDex-index); alg.exp[index] = -99; // replace the arithmetic sequence with the numerical result
+			alg.ord.splice(index, enDex-index); alg.ord[index] = -99; // ---- replace the order sequence with a number literal code
+		}
+		return alg;
+	}
+	
+	function eval_sequence(nAlg){ var theAlg = exp_to_alg( nAlg ); eval_exp(theAlg); return theAlg.exp[0]; }
+	
+	// = End Test Specific =
+	
+	var GRECOtests = [
+		//['(function(){entryStr = "40"; entryStr_to_opEntry(); return opEntry;})()',(function(){entryStr = "40"; entryStr_to_opEntry(); return opEntry;})(), 40, null],
+		//['(function(){entryStr = "foo"; entryStr_to_opEntry(); return opEntry;})()',(function(){entryStr = "foo"; entryStr_to_opEntry(); return opEntry;})(), 40, null],
+		// ordering of operations
+		["scan_exp( [4,'+',4] )", scan_exp( [4,'+',4] ), [4,3,4], eql_gen_list_structs],
+		["scan_exp( ['(',4,'+',4,')'] )", scan_exp( ['(',4,'+',4,')'] ), [0,4,3,4,0], eql_gen_list_structs],
+		["scan_exp( ['(','(',4,'*',3,')','+',4,')'] )", scan_exp( ['(','(',4,'*',3,')','+',4,')'] ), [0,-1,4,2,4,-1,3,4,0], eql_gen_list_structs],
+		["scan_exp( ['(','(',4,'*',3,')','+',4,')','sqrt'] )", scan_exp( ['(','(',4,'*',3,')','+',4,')','sqrt'] ), [0,-1,4,2,4,-1,3,4,0,1], eql_gen_list_structs],
+		["scan_exp( ['(','(',4,'*',3,')','+','(',4,'/',2,')',')','sqrt'] )", 
+			scan_exp( ['(','(',4,'*',3,')','+','(',4,'/',2,')',')','sqrt'] ), [0,-1,4,2,4,-1,3,-1,4,2,4,-1,0,1], eql_gen_list_structs],
+		// empty expressions
+		["empty_alg().exp",empty_alg().exp, [], eql_gen_list_structs],
+		["empty_alg().ord",empty_alg().ord, [], eql_gen_list_structs],
+		// arithmetic evaluators
+		["(function(alg, index){ infix_adtn(alg, index); return alg.exp; })( {exp:[2,'+',3], ord:[4,3,4]} )",
+			(function(alg, index){ infix_adtn(alg, index); return alg.exp; })( {exp:[2,'+',3], ord:[4,3,4]}, 1 ), 
+			[5], eql_gen_list_structs],
+		["(function(alg, index){ infix_adtn(alg, index); return alg.exp; })( {exp:['a','b',2,'+',-3,'c','d'], ord:[-99,-99,4,3,4,-99,-99]}, 3 )",
+			(function(alg, index){ infix_adtn(alg, index); return alg.exp; })( {exp:['a','b',2,'+',-3,'c','d'], ord:[-99,-99,4,3,4,-99,-99]}, 3 ), 
+			['a','b',-1,'c','d'], eql_gen_list_structs],
+		["(function(alg, index){ infix_subt(alg, index); return alg.exp; })( {exp:[2,'-',3], ord:[4,3,4]} )",
+			(function(alg, index){ infix_subt(alg, index); return alg.exp; })( {exp:[2,'-',3], ord:[4,3,4]}, 1 ), 
+			[-1], eql_gen_list_structs],
+		["(function(alg, index){ infix_subt(alg, index); return alg.exp; })( {exp:['a','b',2,'-',-3,'c','d'], ord:[-99,-99,4,3,4,-99,-99]}, 3 )",
+			(function(alg, index){ infix_subt(alg, index); return alg.exp; })( {exp:['a','b',2,'-',-3,'c','d'], ord:[-99,-99,4,3,4,-99,-99]}, 3 ), 
+			['a','b',5,'c','d'], eql_gen_list_structs],
+		["(function(alg, index){ infix_mult(alg, index); return alg.exp; })( {exp:[2,'*',3], ord:[4,3,4]} )",
+			(function(alg, index){ infix_mult(alg, index); return alg.exp; })( {exp:[2,'*',3], ord:[4,3,4]}, 1 ), 
+			[6], eql_gen_list_structs],
+		["(function(alg, index){ infix_mult(alg, index); return alg.exp; })( {exp:['a','b',2,'*',-3,'c','d'], ord:[-99,-99,4,2,4,-99,-99]}, 3 )",
+			(function(alg, index){ infix_mult(alg, index); return alg.exp; })( {exp:['a','b',2,'*',-3,'c','d'], ord:[-99,-99,4,2,4,-99,-99]}, 3 ), 
+			['a','b',-6,'c','d'], eql_gen_list_structs],
+		["(function(alg, index){ infix_divd(alg, index); return alg.exp; })( {exp:[6,'/',3], ord:[4,2,4]} )",
+			(function(alg, index){ infix_divd(alg, index); return alg.exp; })( {exp:[6,'/',3], ord:[4,2,4]}, 1 ), 
+			[2], eql_gen_list_structs],
+		["(function(alg, index){ infix_divd(alg, index); return alg.exp; })( {exp:['a','b',6,'/',-3,'c','d'], ord:[-99,-99,4,2,4,-99,-99]}, 3 )",
+			(function(alg, index){ infix_divd(alg, index); return alg.exp; })( {exp:['a','b',6,'/',-3,'c','d'], ord:[-99,-99,4,2,4,-99,-99]}, 3 ), 
+			['a','b',-2,'c','d'], eql_gen_list_structs],
+		// pstfx_sqrt
+		["(function(alg, index){ pstfx_sqrt(alg, index); return alg.exp; })( {exp:[9,'sqrt'], ord:[4,1]}, 1 )",
+			(function(alg, index){ pstfx_sqrt(alg, index); return alg.exp; })( {exp:[9,'sqrt'], ord:[4,1]}, 1 ), 
+			[3], eql_gen_list_structs],
+		["clos_paren_exists( exp_to_alg(['(',4,'+',4,')']), 0 )", clos_paren_exists( exp_to_alg(['(',4,'+',4,')']), 0 ), 4, null],
+		["clos_paren_exists( exp_to_alg( ['(','(',4,'*',3,')','+',4,')','sqrt'] ), 1)", 
+			clos_paren_exists( exp_to_alg( ['(','(',4,'*',3,')','+',4,')','sqrt'] ), 1), 5, null],
+		// 'eval_exp' for simple expressions without parens
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [4,'*',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [4,'*',3] ) ), 12, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/',3] ) ), 4, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'+',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'+',3] ) ), 15, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'-',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'-',3] ) ), 9, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'-',3,'+',1] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'-',3,'+',1] ) ), 10, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [2,'+',3,'*',4,'-',5] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [2,'+',3,'*',4,'-',5] ) ), 9, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [2,'+',9,'sqrt'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [2,'+',9,'sqrt'] ) ), 5, null ],
+		// fixing index problem in 'eval_paren'
+		["test_slice_paren(exp_to_alg( ['(',12,'-',3,')'] ), 0).exp",
+			test_slice_paren(exp_to_alg( ['(',12,'-',3,')'] ), 0).exp, [12,'-',3], eql_gen_list_structs],
+		["test_slice_paren(exp_to_alg( ['(',12,'-',3] ), 0).exp",
+			test_slice_paren(exp_to_alg( ['(',12,'-',3] ), 0).exp, ['(',12,'-',3], eql_gen_list_structs],
+		["test_splice_paren(exp_to_alg( ['(',12,'-',3,')','+',9] ), 0).exp",
+			test_splice_paren(exp_to_alg( ['(',12,'-',3,')','+',9] ), 0).exp, [-99,'+',9], eql_gen_list_structs],
+		["test_splice_paren(exp_to_alg( [9,'+','(',12,'-',3,')'] ), 2).exp",
+			test_splice_paren(exp_to_alg( [9,'+','(',12,'-',3,')'] ), 2).exp, [9,'+',-99], eql_gen_list_structs],
+		["test_splice_paren(exp_to_alg( [9,'+','(',12,'-',3,')'] ), 2).ord",
+			test_splice_paren(exp_to_alg( [9,'+','(',12,'-',3,')'] ), 2).ord, [4,3,-99], eql_gen_list_structs],
+		// 'eval_exp'
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')'] ) ), 9, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')','sqrt'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')','sqrt'] ) ), 3, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')','sqrt','*',5] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')','sqrt','*',5] ) ), 15, null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/',0] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/',0] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [1,'+',12,'/',0] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [1,'+',12,'/',0] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/','(',1,'-',1,')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/','(',1,'-',1,')'] ) ), 
+			'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/','(',1,'-',1,')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'/','(',1,'/',0,')'] ) ), 
+			'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'?',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'?',3] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'ERROR',3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'ERROR',3] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,3] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,3] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'+',3,')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [12,'+',3,')'] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'+',3,')',')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'+',3,')',')'] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'+','(',3,'-',1,')',')',')'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'+','(',3,'-',1,')',')',')'] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [-1,'sqrt'] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( [-1,'sqrt'] ) ), 'ERROR', null ],
+		["(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',12,'-',3,')','sqrt','*',5] ) )", 
+			(function(nAlg){ eval_exp(nAlg); return nAlg.exp[0]; })( exp_to_alg( ['(',3,'-',12,')','sqrt','*',5] ) ), 'ERROR', null ],
+		["eval_sequence( [9, '*'] )", 
+			eval_sequence( [9, '*'] ), 'ERROR', null ]
+	];
+	
+	displayln( run_unit_test_battery(GRECOtests) );
+	
+	// == End Test ==
+	
+</script-->
+
+
+</html>
